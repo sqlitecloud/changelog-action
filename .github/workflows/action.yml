@@ -40,6 +40,21 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      - name: Validate inputs
+        env:
+          STAGE_BRANCH: ${{ inputs.stage_branch }}
+        run: |
+          # `stage_branch` is required, but GitHub's "required" only checks the key is
+          # present — an empty string (e.g. an unset caller variable) still passes and would
+          # make the changelog PR silently target the website repo's default branch. Fail fast.
+          if [ -z "$STAGE_BRANCH" ]; then
+            echo "❌ ERROR: 'stage_branch' is empty."
+            echo "   Set it on the caller (e.g. a WEBSITE_STAGE_BRANCH variable) so changelog"
+            echo "   PRs target the intended staging branch instead of the default branch."
+            exit 1
+          fi
+          echo "✓ stage_branch = $STAGE_BRANCH"
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
