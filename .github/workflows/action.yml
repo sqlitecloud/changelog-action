@@ -62,12 +62,23 @@ jobs:
 
       - name: Get version
         id: get_version
+        env:
+          # Through the env rather than interpolated into the script: it is a dispatch input,
+          # so its value is chosen by whoever runs the workflow.
+          TEST_VERSION: ${{ github.event.inputs.test_version }}
         run: |
           if [[ "${{ github.event_name }}" == "push" ]]; then
-            echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+            # A caller's tag may or may not carry a v: sqlite-js tags 1.4.3, where others tag
+            # v1.4.3. Taking off refs/tags/ and then an optional v reads both as 1.4.3, where
+            # stripping "refs/tags/v" in one go left a bare tag as the whole refs/tags/1.4.3,
+            # which the version check further down then rejected.
+            VERSION=${GITHUB_REF#refs/tags/}
+            VERSION=${VERSION#v}
           else
-            echo "VERSION=${{ github.event.inputs.test_version }}" >> $GITHUB_OUTPUT
+            VERSION=$TEST_VERSION
           fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          # VERSION is a shell variable now, so this URL no longer comes out without it.
           echo "URL=${{ github.server_url }}/${{ github.repository }}/releases/tag/$VERSION" >> $GITHUB_OUTPUT
 
       - name: Extract Full Changelog for Release
